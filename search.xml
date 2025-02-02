@@ -20,17 +20,6 @@
     
     
     <entry>
-      <title>友情链接</title>
-      <link href="/project/link/index.html"/>
-      <url>/project/link/index.html</url>
-      
-        <content type="html"><![CDATA[]]></content>
-      
-    </entry>
-    
-    
-    
-    <entry>
       <title>articles</title>
       <link href="/project/articles/index.html"/>
       <url>/project/articles/index.html</url>
@@ -42,9 +31,9 @@
     
     
     <entry>
-      <title>categories</title>
-      <link href="/project/categories/index.html"/>
-      <url>/project/categories/index.html</url>
+      <title>友情链接</title>
+      <link href="/project/link/index.html"/>
+      <url>/project/link/index.html</url>
       
         <content type="html"><![CDATA[]]></content>
       
@@ -56,6 +45,17 @@
       <title>tags</title>
       <link href="/project/tags/index.html"/>
       <url>/project/tags/index.html</url>
+      
+        <content type="html"><![CDATA[]]></content>
+      
+    </entry>
+    
+    
+    
+    <entry>
+      <title>categories</title>
+      <link href="/project/categories/index.html"/>
+      <url>/project/categories/index.html</url>
       
         <content type="html"><![CDATA[]]></content>
       
