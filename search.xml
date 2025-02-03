@@ -4,6 +4,25 @@
   
     
     <entry>
+      <title>IP伪造</title>
+      <link href="/2025/02/03/CTF%E4%B8%AD%E7%9A%84IP%E4%BC%AA%E9%80%A0/"/>
+      <url>/2025/02/03/CTF%E4%B8%AD%E7%9A%84IP%E4%BC%AA%E9%80%A0/</url>
+      
+        <content type="html"><![CDATA[<p>在一些CTF比赛常常会考到通过<strong>伪造IP</strong>获得flag，下面是一些常见的IP伪造的请求头：</p><ul><li><strong>X-Forwarded-For:127.0.0.1</strong></li><li><strong>Client-ip:127.0.0.1</strong></li><li><strong>X-Client-IP:127.0.0.1</strong></li><li><strong>X-Remote-IP:127.0.0.1</strong></li><li><strong>X-Rriginating-IP:127.0.0.1</strong></li><li><strong>X-Remote-addr:127.0.0.1</strong></li><li><strong>HTTP_CLIENT_IP:127.0.0.1</strong></li><li><strong>X-Real-IP:127.0.0.1</strong></li><li><strong>X-Originating-IP:127.0.0.1</strong></li><li><strong>via:127.0.0.1</strong></li><li><strong>X-Forwarded:127.0.0.1</strong></li><li><strong>X-Forwarded-Host:127.0.0.1</strong></li><li><strong>True-Client-IP:127.0.0.1</strong></li><li><strong>Ali-CDN-Real-IP:127.0.0.1</strong></li><li><strong>Cdn-Real-IP:127.0.0.1</strong></li><li><strong>Cdn-Src-IP:127.0.0.1</strong></li><li><strong>CF-Connecting-IP:127.0.0.1</strong></li><li><strong>Proxy-Client-IP:127.0.0.1</strong></li></ul>]]></content>
+      
+      
+      
+        <tags>
+            
+            <tag> web,CTF </tag>
+            
+        </tags>
+      
+    </entry>
+    
+    
+    
+    <entry>
       <title>Hello World</title>
       <link href="/2025/01/31/hello-world/"/>
       <url>/2025/01/31/hello-world/</url>
