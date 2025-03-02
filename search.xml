@@ -26,9 +26,9 @@
             
             <tag> web </tag>
             
-            <tag> 网络安全 </tag>
-            
             <tag> XXE </tag>
+            
+            <tag> 网络安全 </tag>
             
         </tags>
       
@@ -82,9 +82,9 @@
             
             <tag> web </tag>
             
-            <tag> wp </tag>
-            
             <tag> 网络安全 </tag>
+            
+            <tag> wp </tag>
             
             <tag> ctfshow </tag>
             
@@ -113,9 +113,9 @@
             
             <tag> web </tag>
             
-            <tag> hgame </tag>
-            
             <tag> wp </tag>
+            
+            <tag> hgame </tag>
             
         </tags>
       
