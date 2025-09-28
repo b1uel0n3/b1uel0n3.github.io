@@ -1,0 +1,5 @@
+User-agent: *
+Allow: / 
+
+Sitemap: https://b1uel0n3.github.io/sitemap.xml
+Sitemap: https://b1uel0n3.github.io/baidusitemap.xml
