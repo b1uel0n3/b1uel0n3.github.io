@@ -687,9 +687,9 @@
             
             <tag> web </tag>
             
-            <tag> XXE </tag>
-            
             <tag> 网络安全 </tag>
+            
+            <tag> XXE </tag>
             
         </tags>
       
@@ -749,9 +749,9 @@
             
             <tag> wp </tag>
             
-            <tag> 网络安全 </tag>
-            
             <tag> Web </tag>
+            
+            <tag> 网络安全 </tag>
             
             <tag> ctfshow </tag>
             
