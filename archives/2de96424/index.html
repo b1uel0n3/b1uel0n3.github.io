@@ -1,0 +1,427 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>Java JDBC注入深度解析 | B1ueL0n3's blog</title><meta name="author" content="B1ueL0n3"><meta name="copyright" content="B1ueL0n3"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="概念Java Database Connetivity，Java数据库连接，是Java提供对数据库进行连接、操作的标准API。 相关类和接口 java.sql.DriverManager Java通过java.sql.DriverManager来管理所用数据库的驱动注册，提供getConnection方法来连接数据库  java.sql.Driver 负责实现对数据库的连接，所以数据库驱动包都必须">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Java JDBC注入深度解析">
+<meta property="og:url" content="https://b1uel0n3.github.io/archives/2de96424/index.html">
+<meta property="og:site_name" content="B1ueL0n3&#39;s blog">
+<meta property="og:description" content="概念Java Database Connetivity，Java数据库连接，是Java提供对数据库进行连接、操作的标准API。 相关类和接口 java.sql.DriverManager Java通过java.sql.DriverManager来管理所用数据库的驱动注册，提供getConnection方法来连接数据库  java.sql.Driver 负责实现对数据库的连接，所以数据库驱动包都必须">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://b1uel0n3.github.io/img/18.png">
+<meta property="article:published_time" content="2025-09-27T12:13:13.000Z">
+<meta property="article:modified_time" content="2025-09-28T11:11:22.104Z">
+<meta property="article:author" content="B1ueL0n3">
+<meta property="article:tag" content="JDBC">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://b1uel0n3.github.io/img/18.png"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "Java JDBC注入深度解析",
+  "url": "https://b1uel0n3.github.io/archives/2de96424/",
+  "image": "https://b1uel0n3.github.io/img/18.png",
+  "datePublished": "2025-09-27T12:13:13.000Z",
+  "dateModified": "2025-09-28T11:11:22.104Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "B1ueL0n3",
+      "url": "https://b1uel0n3.github.io/"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/toux.jpg"><link rel="canonical" href="https://b1uel0n3.github.io/archives/2de96424/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//fonts.googleapis.com" crossorigin=""/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Titillium+Web&amp;display=swap" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.xml","preload":false,"top_n_per_article":1,"unescape":false,"languages":{"hits_empty":"未找到符合您查询的内容：${query}","hits_stats":"共找到 ${hits} 篇文章"}},
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"简"},
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":true},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: true,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: true,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'Java JDBC注入深度解析',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><link rel="stylesheet" href="/css/custom.css"><meta name="generator" content="Hexo 7.3.0"></head><body><div id="loading-box"><div class="loading-left-bg"></div><div class="loading-right-bg"></div><div class="spinner-box"><div class="configure-border-1"><div class="configure-core"></div></div><div class="configure-border-2"><div class="configure-core"></div></div><div class="loading-word">加载中...</div></div></div><script>(()=>{
+  const $loadingBox = document.getElementById('loading-box')
+  const $body = document.body
+  const preloader = {
+    endLoading: () => {
+      $body.style.overflow = ''
+      $loadingBox.classList.add('loaded')
+    },
+    initLoading: () => {
+      $body.style.overflow = 'hidden'
+      $loadingBox.classList.remove('loaded')
+    }
+  }
+
+  preloader.initLoading()
+  window.addEventListener('load', preloader.endLoading)
+
+  if (false) {
+    btf.addGlobalFn('pjaxSend', preloader.initLoading, 'preloader_init')
+    btf.addGlobalFn('pjaxComplete', preloader.endLoading, 'preloader_end')
+  }
+})()</script><div id="web_bg" style="background-image: url(/img/2.jpg);"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/img/toux.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">35</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">40</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">19</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 文章</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url(/img/26.png);"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/" title="回到主页"><span class="site-name">B1ueL0n3's blog</span></a><a class="nav-page-title" href="/"><span class="site-name">Java JDBC注入深度解析</span></a><!--鼠标下滑时的文章标题显示--></span><div class="mask-name-container"><center id="name-container"><a id="page-name" href="javascript:btf.scrollToDest(0, 500)"></a></center></div><div id="menus"><div id="search-button"><span class="site-page social-icon search"><i class="fas fa-search fa-fw"></i></span></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 文章</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">Java JDBC注入深度解析</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2025-09-27T12:13:13.000Z" title="发表于 2025-09-27 20:13:13">2025-09-27</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2025-09-28T11:11:22.104Z" title="更新于 2025-09-28 19:11:22">2025-09-28</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/Web/">Web</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/Web/java%E5%AE%89%E5%85%A8/">java安全</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/Web/java%E5%AE%89%E5%85%A8/Java%E5%9F%BA%E7%A1%80/">Java基础</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">总字数:</span><span class="word-count">3.4k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">阅读时长:</span><span>13分钟</span></span><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><h2 id="概念"><a href="#概念" class="headerlink" title="概念"></a>概念</h2><p>Java Database Connetivity，Java数据库连接，是Java提供对数据库进行连接、操作的标准API。</p>
+<h2 id="相关类和接口"><a href="#相关类和接口" class="headerlink" title="相关类和接口"></a>相关类和接口</h2><ul>
+<li><p>java.sql.DriverManager</p>
+<p>Java通过java.sql.DriverManager来管理所用数据库的驱动注册，提供getConnection方法来连接数据库</p>
+</li>
+<li><p>java.sql.Driver</p>
+<p>负责实现对数据库的连接，所以数据库驱动包都必须实现这个接口才能完成数据库连接操作</p>
+</li>
+<li><p>jva.sql.Connection</p>
+<p>通过java.sql.DriverManager.getConnection方法成功连接数据库后，会返回一个java.sql.Connection数据库连接对象，一切对数据库的查询操作都将依赖于这个对象</p>
+</li>
+</ul>
+<h2 id="JDBC-Demo"><a href="#JDBC-Demo" class="headerlink" title="JDBC Demo"></a>JDBC Demo</h2><p>先开启mysql环境</p>
+<p>JDBC连接数据库的一般步骤：</p>
+<ul>
+<li>注册驱动</li>
+<li>获取连接</li>
+</ul>
+<p>先添加依赖：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">&lt;dependency&gt;</span><br><span class="line">  &lt;groupId&gt;mysql&lt;/groupId&gt;</span><br><span class="line">  &lt;artifactId&gt;mysql-connector-java&lt;/artifactId&gt;</span><br><span class="line">  &lt;version&gt;<span class="number">5.1</span><span class="number">.28</span>&lt;/version&gt;</span><br><span class="line">&lt;/dependency&gt;</span><br></pre></td></tr></table></figure>
+
+<p>Demo：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> JDBC;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.sql.Connection;</span><br><span class="line"><span class="keyword">import</span> java.sql.DriverManager;</span><br><span class="line"><span class="keyword">import</span> java.sql.ResultSet;</span><br><span class="line"><span class="keyword">import</span> java.sql.Statement;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">test</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception &#123;</span><br><span class="line">        <span class="type">String</span> <span class="variable">CLASS_NAME</span> <span class="operator">=</span> <span class="string">&quot;com.mysql.jdbc.Driver&quot;</span>;</span><br><span class="line">        <span class="type">String</span> <span class="variable">URL</span> <span class="operator">=</span> <span class="string">&quot;jdbc:mysql://localhost:3306/dvwa&quot;</span>;</span><br><span class="line">        <span class="type">String</span> <span class="variable">USERNAME</span> <span class="operator">=</span> <span class="string">&quot;root&quot;</span>;</span><br><span class="line">        <span class="type">String</span> <span class="variable">PASSWORD</span> <span class="operator">=</span> <span class="string">&quot;123456&quot;</span>;</span><br><span class="line"></span><br><span class="line">        Class.forName(CLASS_NAME);<span class="comment">// 注册驱动类</span></span><br><span class="line">        <span class="type">Connection</span> <span class="variable">connection</span> <span class="operator">=</span> DriverManager.getConnection(URL, USERNAME, PASSWORD);</span><br><span class="line">        </span><br><span class="line">        <span class="comment">//简单查询</span></span><br><span class="line">        <span class="type">Statement</span> <span class="variable">statement</span> <span class="operator">=</span> connection.createStatement();</span><br><span class="line">        statement.execute(<span class="string">&quot;select * from users&quot;</span>);</span><br><span class="line">        <span class="type">ResultSet</span> <span class="variable">set</span> <span class="operator">=</span> statement.getResultSet();</span><br><span class="line">        <span class="keyword">while</span> (set.next()) &#123;</span><br><span class="line">            System.out.println(set.getString(<span class="number">2</span>));</span><br><span class="line">        &#125;</span><br><span class="line"></span><br><span class="line">        statement.close();</span><br><span class="line">        connection.close();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p>其中<code>jdbc:mysql://</code>表示要连接的数据库类型mysql，<code>localhost:3306</code>为mysql服务地址，<code>dvwa</code>为数据库名。简单查询中2表示查询的列索引，即第2列</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250721171513927-17589753289641.png" alt="image-20250721171513927"></p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250721171455259-17589753289652.png" alt="image-20250721171455259"></p>
+<h2 id="SPI机制"><a href="#SPI机制" class="headerlink" title="SPI机制"></a>SPI机制</h2><p>Service Provider Interface，是JDK内置的一种服务提供发现机制，可以用来启动框架扩展和替换组建。服务提供接口，不同厂商可以针对同一个接口做出不同的实现。当服务提供者提供了一种接口的实现之后，需要在classpath下的<code>META-INF/services/</code>目录下创建一个以服务接口命名的文件，文件内容就是这个接口的具体实现类，当程序需要这个服务时，就可以通过查找这个jar包的<code>META-INF/services/</code>中的配置文件，配置文件中有接口的具体实现类名，可以根据这个类名进行加载实例化。</p>
+<h2 id="源码分析"><a href="#源码分析" class="headerlink" title="源码分析"></a>源码分析</h2><p>环境：mysql-connector-java 5.1.28</p>
+<h3 id="加载驱动"><a href="#加载驱动" class="headerlink" title="加载驱动"></a>加载驱动</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">String</span> <span class="variable">CLASS_NAME</span> <span class="operator">=</span> <span class="string">&quot;com.mysql.jdbc.Driver&quot;</span>;</span><br><span class="line">Class.forName(CLASS_NAME);</span><br></pre></td></tr></table></figure>
+
+<p>也可以写成：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">DriverManager.registerDirver(<span class="keyword">new</span> <span class="title class_">Driver</span>());</span><br></pre></td></tr></table></figure>
+
+<p>下面我们跟下代码看下究竟怎么实现的</p>
+<p>当JVM加载<code>com.mysql.jdbc.Driver</code>类到内存中时会自动触发其静态初始代码块：</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250722095938767-17589753289653.png" alt="image-20250722095938767"></p>
+<p>调用<code>java.sql.DriverManager.registerDriver(new Driver());</code>方法来注册驱动，要注册的驱动即是com.mysql.jdbc.Driver对象：<br><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250722100354401-17589753289654.png" alt="image-20250722100354401"></p>
+<p>调用另一个重载方法registerDriver:</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250722100446929-17589753289655.png" alt="image-20250722100446929"></p>
+<p>方法中实例化了一个DriverInfo对象用来存放驱动类信息。</p>
+<p>registeredDrivers是DriverManager对象的一个变量，通过addIfAbsent方法，将DriverInfo对象信息存放进registeredDrivers变量中</p>
+<h3 id="获取连接"><a href="#获取连接" class="headerlink" title="获取连接"></a>获取连接</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">String</span> <span class="variable">URL</span> <span class="operator">=</span> <span class="string">&quot;jdbc:mysql://localhost:3306/dvwa&quot;</span>;</span><br><span class="line"><span class="type">String</span> <span class="variable">USERNAME</span> <span class="operator">=</span> <span class="string">&quot;root&quot;</span>;</span><br><span class="line"><span class="type">String</span> <span class="variable">PASSWORD</span> <span class="operator">=</span> <span class="string">&quot;123456&quot;</span>;</span><br><span class="line"></span><br><span class="line"><span class="type">Connection</span> <span class="variable">connection</span> <span class="operator">=</span> DriverManager.getConnection(URL, USERNAME, PASSWORD);</span><br></pre></td></tr></table></figure>
+
+<p>跟进getConnection方法：</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250722100813489-17589753289656.png" alt="image-20250722100813489"></p>
+<p>其中<code>Reflection.getCallerClass()</code>用于获取调用者的类，即在运行时确定正在调用该方法的类的名称，返回一个Class对象，比如我这里是JDBC.test</p>
+<p>跟进getConnection重载方法：</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250722101324169-17589753289657.png" alt="image-20250722101324169"></p>
+<p>先获取类加载器</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250722101544077-17589753289658.png" alt="image-20250722101544077"></p>
+<p>遍历registeredDrivers变量的值，里面存放着我们注册过的驱动，随即通过DriverInfo对象获取对应驱动</p>
+<p>然后就是通过获取的驱动，调用其connet方法进行连接，由于驱动com.mysql.jdbc.Driver没有该方法，所以调用父类NonRegisteringDriver.connect方法：</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250722102826264-17531513072751-17589753289659.png" alt="image-20250722102826264"></p>
+<p>先对 URL 前缀进行判断，判断成功直接路由到专用方法</p>
+<p>再通过<code>parseURL()</code>将 URL 和 info 合并解析为统一的 Properties 对象:</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250722103120132-175897532896510.png" alt="image-20250722103120132"></p>
+<p><code>NUM_HOSTS_PROPERTY_KEY</code>表示 URL 中配置的主机数量，如果主机数大于1就调用connectFailover处理故障转移场景</p>
+<p>最后调用<code>com.mysql.jdbc.ConnectionImpl.getInstance</code>方法获取连接：</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250722103621450-175897532896511.png" alt="image-20250722103621450"></p>
+<p>这部分逻辑就是判断JDBC版本是否在4以上，JDBC4以上调用Util.handleNewInstance通过反射动态创建增强版连接对象，<code>JDBC_4_CONNECTION_CTOR</code>静态常量指向<code>com.mysql.jdbc.JDBC4Connection</code> 的构造函数，最后返回Connection对象：</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250722104231643-175897532896612.png" alt="image-20250722104231643"></p>
+<p>handleNewInstance用于反射实例化</p>
+<p>相当于调用JDBC4Connection.newInstance(args)，传入参数为创建连接的信息如主机名端口等等：</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250722104500314-17531523012163-175897532896613.png" alt="image-20250722104500314"></p>
+<p>会调用父类ConnetionImpl的构造方法：</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250722104830188-175897532896614.png" alt="image-20250722104830188"></p>
+<p>获取主机名，端口，数据库名等信息</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250722105701507-175897532896615.png" alt="image-20250722105701507"></p>
+<p>这段代码用于创建连接，<code>this.dbmd = getMetaData(false, false);</code>初始化数据库元数据对象。<code>initializeSafeStatementInterceptors();</code>初始化”安全模式”下的SQL拦截器，<code>createNewIO(false);</code>用于建立物理数据库连接，<code>unSafeStatementInterceptors();</code>启用常规SQL拦截器</p>
+<p>跟进<code>createNewIO(false);</code>：</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250722110033648-175897532896616.png" alt="image-20250722110033648"></p>
+<p>先获取连接信息，然后调用<code>connectOneTryOnly(isForReconnect, mergedProps);</code>方法：</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250906230512011-175897532896617.png" alt="image-20250906230512011"></p>
+<p><code>coreConnect(mergedProps);</code>执行底层 TCP 握手 + MySQL 协议认证，即建立连接</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250722110822598-175897532896618.png" alt="image-20250722110822598"></p>
+<p>将用户配置的 Statement 拦截器绑定到底层 IO 层</p>
+<p>就是在建立TCP连接后对数据库会话进行“上下文初始化 和 状态恢复”并设置拦截器、读取服务器配置等作用</p>
+<p>回到Connectionlmpl方法：</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250722111606345-175897532896619.png" alt="image-20250722111606345"></p>
+<p>最后将新创建的连接对象注册到驱动的跟踪系统中并进行资源管理</p>
+<h2 id="扩展参数带来的安全问题"><a href="#扩展参数带来的安全问题" class="headerlink" title="扩展参数带来的安全问题"></a>扩展参数带来的安全问题</h2><p>mysql JDBC中包含一个危险的扩展参数：autoDeserialize。这个参数配置为true时，JDBC客户端会自动反序列化返回的BLOB类型字段，BLOB为二进制形式的长文本数据</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250722114351016-175897532896620.png" alt="image-20250722114351016"></p>
+<h2 id="JDBC反序列化"><a href="#JDBC反序列化" class="headerlink" title="JDBC反序列化"></a>JDBC反序列化</h2><p>由于后续mysql-connector-java会用到多个不同版本，所以依赖设置为：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">&lt;properties&gt;</span><br><span class="line">    &lt;mysql.version&gt;<span class="number">5.1</span><span class="number">.28</span>&lt;/mysql.version&gt;</span><br><span class="line">  &lt;/properties&gt;</span><br><span class="line"></span><br><span class="line">  &lt;dependencies&gt;</span><br><span class="line">    &lt;dependency&gt;</span><br><span class="line">      &lt;groupId&gt;mysql&lt;/groupId&gt;</span><br><span class="line">      &lt;artifactId&gt;mysql-connector-java&lt;/artifactId&gt;</span><br><span class="line">      &lt;version&gt;$&#123;mysql.version&#125;&lt;/version&gt;</span><br><span class="line">    &lt;/dependency&gt;</span><br><span class="line">   &lt;/dependencies&gt;</span><br></pre></td></tr></table></figure>
+
+<p>当需要切换版本时终端输入：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mvn clean install &quot;-Dmysql.version=版本号&quot;</span><br></pre></td></tr></table></figure>
+
+<p>查看版本：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">mvn dependency:tree | findstr <span class="string">&quot;mysql-connector-java&quot;</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="datectCustomCollations链分析"><a href="#datectCustomCollations链分析" class="headerlink" title="datectCustomCollations链分析"></a>datectCustomCollations链分析</h3><h4 id="mysql-connector-java-5-1-19-5-1-28"><a href="#mysql-connector-java-5-1-19-5-1-28" class="headerlink" title="mysql-connector-java 5.1.19~5.1.28"></a>mysql-connector-java 5.1.19~5.1.28</h4><p>环境：mysql-connector-java 5.1.28</p>
+<p>在前面分析代码时我们提到在进行数据库连接时使用了<code>createNewIO(false);</code>方法：</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250722114442194-175897532896621.png" alt="image-20250722114442194"></p>
+<p>跟进后发现调用了<code>connectOneTryOnly(isForReconnect, mergedProps);</code>方法：</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250722114600819-175897532896622.png" alt="image-20250722114600819"></p>
+<p>connectOneTryOnly方法中<code>coreConnect(mergedProps);</code>用于建立连接，会调用<code>initializePropsFromServer</code>方法，<code>initializePropsFromServer</code>方法内又会调用<code>buildCollationMapping</code>方法：</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250722114835959-175897532896723.png" alt="image-20250722114835959"></p>
+<p>在<code>buildCollationMapping</code>方法中，stmt通过getMetadataSafeStatement()方法获取当前环境的StatementImpl对象，然后通过executeQuery方法执行SQL语句</p>
+<p>然后执行Util.resultSetToMap方法，versionMeetsMinimum方法用于判断驱动版本：<br><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250722141728865-175897532896724.png" alt="image-20250722141728865"></p>
+<p>在Util.resultSetToMap方法中会将SHOW COLLATION查询结果的第三列和第二列的值存放进mappedValues</p>
+<p>还会调用ResultSetImpl对象的getObject方法，对应反序列化位置，需要字段类型为blob：<br><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250722142717770-175897532896725.png" alt="image-20250722142717770"></p>
+<p>当字段为BLOB类型且扩展参数autoDeserialize为true，且SHOW COLLATION的返回结果需要有三个字段，就会从MySQL服务端中获取对应的字节码数据，且需要字段2或3为BLOB装载我们的序列化数据，那么在返回数据时就会触发反序列化造成攻击</p>
+<p>这里使用4ra1n师傅做的mysql-fake-server项目来进行复现：</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250722153610046-175897532896726.png" alt="image-20250722153610046"></p>
+<p>exp：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> JDBC;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.sql.Connection;</span><br><span class="line"><span class="keyword">import</span> java.sql.DriverManager;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">test</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception &#123;</span><br><span class="line">        <span class="type">String</span> <span class="variable">CLASS_NAME</span> <span class="operator">=</span> <span class="string">&quot;com.mysql.jdbc.Driver&quot;</span>;</span><br><span class="line">        <span class="type">String</span> <span class="variable">URL</span> <span class="operator">=</span> <span class="string">&quot;jdbc:mysql://127.0.0.1:65432/test?autoDeserialize=true&amp;user=base64ZGVzZXJfQ0MzMV9jYWxjLmV4ZQ==&quot;</span>;</span><br><span class="line"></span><br><span class="line">        Class.forName(CLASS_NAME);<span class="comment">// 注册驱动类</span></span><br><span class="line">        <span class="type">Connection</span> <span class="variable">connection</span> <span class="operator">=</span> DriverManager.getConnection(URL);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250722153845991-175897532896727.png" alt="image-20250722153845991"></p>
+<h4 id="mysql-connector-java-5-1-29-5-1-40"><a href="#mysql-connector-java-5-1-29-5-1-40" class="headerlink" title="mysql-connector-java 5.1.29~5.1.40"></a>mysql-connector-java 5.1.29~5.1.40</h4><p>环境：mysql-connector-java 5.1.29</p>
+<p>改进部分在于com.mysql.jdbc.ConnectionImpl#buildCollationMapping方法：</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250722155444248-175897532896728.png" alt="image-20250722155444248"></p>
+<p>不仅需要驱动版本大于4.1.0，还添加了新的要求：</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250722155546666-175897532896729.png" alt="image-20250722155546666"></p>
+<p>getDetectCustomCollations方法返回扩展参数detectCustomCollations的值，若没设置，默认为false</p>
+<p>只需要新添加扩展参数<code>detectCustomCollations=true</code>即可，这样才能进入Util.resultSetToMap方法调用getObject触发反序列化</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250722155727239-175897532896730.png" alt="image-20250722155727239"></p>
+<p>exp：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> JDBC;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.sql.Connection;</span><br><span class="line"><span class="keyword">import</span> java.sql.DriverManager;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">test</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception &#123;</span><br><span class="line">        <span class="type">String</span> <span class="variable">CLASS_NAME</span> <span class="operator">=</span> <span class="string">&quot;com.mysql.jdbc.Driver&quot;</span>;</span><br><span class="line">        <span class="type">String</span> <span class="variable">URL</span> <span class="operator">=</span> <span class="string">&quot;jdbc:mysql://127.0.0.1:65432/test?detectCustomCollations=true&amp;autoDeserialize=true&amp;user=base64ZGVzZXJfQ0MzMV9jYWxjLmV4ZQ==&quot;</span>;</span><br><span class="line"></span><br><span class="line">        Class.forName(CLASS_NAME);<span class="comment">// 注册驱动类</span></span><br><span class="line">        <span class="type">Connection</span> <span class="variable">connection</span> <span class="operator">=</span> DriverManager.getConnection(URL);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250722155825213-175897532896731.png" alt="image-20250722155825213"></p>
+<h4 id="mysql-connector-java-5-1-41-5-1-48"><a href="#mysql-connector-java-5-1-41-5-1-48" class="headerlink" title="mysql-connector-java 5.1.41~5.1.48"></a>mysql-connector-java 5.1.41~5.1.48</h4><p>环境：mysql-connector-java 5.1.41</p>
+<p>依旧看改进的部分，定位到com.mysql.jdbc.ConnectionImpl#buildCollationMapping方法：</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250722163642145-175897532896732.png" alt="image-20250722163642145"></p>
+<p>新加了customCharset变量需要为null，其默认为null，所以不用管</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250722163824449-175897532896733.png" alt="image-20250722163824449"></p>
+<p>这里没有调用Util.resultSetToMap方法，而是改用直接调用results.getObject(3)，还是会调用getObject方法，不影响利用</p>
+<p>但从mysql-connector-java 5.1.49以后，就不再调用results.getObject方法，该调用链就无效了</p>
+<h4 id="mysql-connector-java-6-0-2-6-0-6"><a href="#mysql-connector-java-6-0-2-6-0-6" class="headerlink" title="mysql-connector-java 6.0.2~6.0.6"></a>mysql-connector-java 6.0.2~6.0.6</h4><p>环境：mysql-connector-java 6.0.6</p>
+<p>该版本采用com.mysql.cj.jdbc.Driver作为驱动类，所以定位到com.mysql.cj.jdbc.Driver.ConnectionImpl#buildCollationMapping方法:</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250722170956098-175897532896734.png" alt="image-20250722170956098"></p>
+<p>indexToCharset默认为null不用管，同时需要detectCustomCollations为ture</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250722171133867-175897532896735.png" alt="image-20250722171133867"></p>
+<p>调用了ResultSetUtil.resultSetToMap方法：<br><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250722171227339-175897532896736.png" alt="image-20250722171227339"></p>
+<p>同样调用了getObject方法</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250722171502758-175897532896737.png" alt="image-20250722171502758"></p>
+<p>这里需要字段类型为BIT类型，后面的调用就类似的，所以利用链不影响</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250722171728373-175897532896738.png" alt="image-20250722171728373"></p>
+<p>exp：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> JDBC;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.sql.Connection;</span><br><span class="line"><span class="keyword">import</span> java.sql.DriverManager;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">test</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception &#123;</span><br><span class="line">        <span class="type">String</span> <span class="variable">CLASS_NAME</span> <span class="operator">=</span> <span class="string">&quot;com.mysql.cj.jdbc.Driver&quot;</span>;</span><br><span class="line">        <span class="type">String</span> <span class="variable">URL</span> <span class="operator">=</span> <span class="string">&quot;jdbc:mysql://127.0.0.1:65432/test?detectCustomCollations=true&amp;autoDeserialize=true&amp;user=base64ZGVzZXJfQ0MzMV9jYWxjLmV4ZQ==&quot;</span>;</span><br><span class="line"></span><br><span class="line">        Class.forName(CLASS_NAME);<span class="comment">// 注册驱动类</span></span><br><span class="line">        <span class="type">Connection</span> <span class="variable">connection</span> <span class="operator">=</span> DriverManager.getConnection(URL);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250722171832836-175897532896739.png" alt="image-20250722171832836"></p>
+<h3 id="ServerStatusDiffInterceptor链分析"><a href="#ServerStatusDiffInterceptor链分析" class="headerlink" title="ServerStatusDiffInterceptor链分析"></a>ServerStatusDiffInterceptor链分析</h3><h4 id="mysql-connector-java-5-1-0-5-1-10"><a href="#mysql-connector-java-5-1-0-5-1-10" class="headerlink" title="mysql-connector-java 5.1.0~5.1.10"></a>mysql-connector-java 5.1.0~5.1.10</h4><p>环境：mysql-connector-java 5.1.1</p>
+<p>在较低的mysql-connector-java版本下是不能利用datectCustomCollations链的：<br><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250722174109110-175897532896740.png" alt="image-20250722174109110"></p>
+<p>所以这时就可以利用ServerStatusDiffInterceptor链</p>
+<p>利用条件：需要连接后进行查询</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">String</span> <span class="variable">sql</span> <span class="operator">=</span> <span class="string">&quot;select database()&quot;</span>;</span><br><span class="line"><span class="type">PreparedStatement</span> <span class="variable">ps</span> <span class="operator">=</span> connection.prepareStatement(sql);</span><br><span class="line"><span class="type">ResultSet</span> <span class="variable">resultSet</span> <span class="operator">=</span> ps.executeQuery();</span><br></pre></td></tr></table></figure>
+
+<p>或者</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">Statement</span> <span class="variable">statement</span> <span class="operator">=</span> connection.createStatement();</span><br><span class="line">statement.execute(<span class="string">&quot;select database()&quot;</span>);</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>是在查询时触发反序列化，而前者是获取结果处触发</p>
+</blockquote>
+<p>执行完查询后，重点在获取结果位置，跟进executeQuery方法：<br><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250723093120157-175897532896741.png" alt="image-20250723093120157"></p>
+<p>locallyScopedConn.useMaxRows方法默认返回false，会调用executeInternal方法：<br><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250723094229853-175897532896742.png" alt="image-20250723094229853"></p>
+<p>利用当前连接对象调用execSQL方法，即ConnectImpl#execSQL:</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250723094516529-175897532896743.png" alt="image-20250723094516529"></p>
+<p>接着执行sqlQueryDirect方法：<br><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250723094707543-175897532896744.png" alt="image-20250723094707543"></p>
+<p>statementInterceptors不为null时调用invokeStatementInterceptorsPre方法：</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250723094953091-175897532896745.png" alt="image-20250723094953091"></p>
+<p>这里对statementInterceptors进行遍历，但默认状态下statementInterceptors为0，所以需要找个方法控制它的值</p>
+<p>MysqlIO类提供initializeStatementInterceptors方法来初始化StatementInterceptors：</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250723101116921-175897532896746.png" alt="image-20250723101116921"></p>
+<p>而在ConnectionImpl类构造方法中，在执行createNewIO方法时实例化了MysqlIO对象：<br><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250723100818122-175897532896747.png" alt="image-20250723100818122"></p>
+<p>最后又刚好触发了MysqlIO对象这个方法：</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250723101134394-175897532896748.png" alt="image-20250723101134394"></p>
+<p>而ConnectionImpl类下的StatementInterceptors可以通过添加扩展参数设置</p>
+<p>这个参数首先必须实现com.mysql.jdbc.StatementInterceptor接口，这里选用<code>com.mysql.jdbc.interceptors.ServerStatusDiffInterceptor</code>这个类，那么在invokeStatementInterceptorsPre方法中，会调用ServerStatusDiffInterceptor#preProcess方法：<br><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250723101410495-175897532896749.png" alt="image-20250723101410495"></p>
+<p>驱动版本必须大于5.0.2，然后调用populateMapWithSessionStatusValues方法：</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250723101459699-175897532896750.png" alt="image-20250723101459699"></p>
+<p>执行Util.resultSetToMap方法：</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250723101529808-175897532896751.png" alt="image-20250723101529808"></p>
+<p>只需要SHOW SESSION STATUS语句返回的字段1或2的类型为blob，且内容为恶意的序列化数据即可</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250723101652041-175897532896752.png" alt="image-20250723101652041"></p>
+<p>exp：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> JDBC;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.sql.Connection;</span><br><span class="line"><span class="keyword">import</span> java.sql.DriverManager;</span><br><span class="line"><span class="keyword">import</span> java.sql.PreparedStatement;</span><br><span class="line"><span class="keyword">import</span> java.sql.ResultSet;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">test</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception &#123;</span><br><span class="line">        <span class="type">String</span> <span class="variable">CLASS_NAME</span> <span class="operator">=</span> <span class="string">&quot;com.mysql.jdbc.Driver&quot;</span>;</span><br><span class="line">        <span class="type">String</span> <span class="variable">URL</span> <span class="operator">=</span> <span class="string">&quot;jdbc:mysql://127.0.0.1:65432/test?autoDeserialize=true&amp;statementInterceptors=com.mysql.jdbc.interceptors.ServerStatusDiffInterceptor&amp;user=base64ZGVzZXJfQ0MzMV9jYWxjLmV4ZQ==&quot;</span>;</span><br><span class="line"></span><br><span class="line">        Class.forName(CLASS_NAME);<span class="comment">// 注册驱动类</span></span><br><span class="line">        <span class="type">Connection</span> <span class="variable">connection</span> <span class="operator">=</span> DriverManager.getConnection(URL);</span><br><span class="line"></span><br><span class="line">        <span class="type">String</span> <span class="variable">sql</span> <span class="operator">=</span> <span class="string">&quot;select database()&quot;</span>;</span><br><span class="line">        <span class="type">PreparedStatement</span> <span class="variable">ps</span> <span class="operator">=</span> connection.prepareStatement(sql);</span><br><span class="line">        <span class="type">ResultSet</span> <span class="variable">resultSet</span> <span class="operator">=</span> ps.executeQuery();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250723101744004-175897532896753.png" alt="image-20250723101744004"></p>
+<h4 id="mysql-connector-java-5-1-11-5-x-xx"><a href="#mysql-connector-java-5-1-11-5-x-xx" class="headerlink" title="mysql-connector-java 5.1.11~5.x.xx"></a>mysql-connector-java 5.1.11~5.x.xx</h4><p>环境：mysql-connector-java 5.1.29</p>
+<p>定位到ConnectImpl#initializePropsFromServer方法：</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250723105412519-175897532896754.png" alt="image-20250723105412519"></p>
+<p>跟进loadServerVariables方法：</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250723105504257-175897532896855.png" alt="image-20250723105504257"></p>
+<p>执行executeQuery方法，跟进：</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250723105734883-175897532896856.png" alt="image-20250723105734883"></p>
+<p>调用execSQL方法，后面的流程就一样了。</p>
+<h4 id="mysql-connector-java-6-x"><a href="#mysql-connector-java-6-x" class="headerlink" title="mysql-connector-java 6.x"></a>mysql-connector-java 6.x</h4><p>和mysql-connector-java 5.1.11~5.x.xx分析流程是一样的，只不过包名换成了<code>com.mysql.cj.jdbc.Driver</code></p>
+<h4 id="mysql-connector-java-8-0-7-8-0-20"><a href="#mysql-connector-java-8-0-7-8-0-20" class="headerlink" title="mysql-connector-java 8.0.7~8.0.20"></a>mysql-connector-java 8.0.7~8.0.20</h4><p>环境：mysql-connector-java 8.0.12</p>
+<p>定位到ConnectionImpl#initializePropsFromServer方法，可以看到已经不是调用当前对象的loadServerVariables和buildCollationMapping方法</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250724091709925-175897532896857.png" alt="image-20250724091709925"></p>
+<p>但其中调用了handleAutoCommitDefaults方法可以利用：</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250724091906390-175897532896858.png" alt="image-20250724091906390"></p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250724092053004-17533200539801-175897532896859.png" alt="image-20250724092053004"></p>
+<p>resetAutoCommitDefault会被赋值为true然后调用setAutoCommit方法：</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250724092911280-175897532896860.png" alt="image-20250724092911280"></p>
+<p>needsSetOnServer赋值为true，会调用execSQL方法，跟进：</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250724093119610-17533206806513-175897532896861.png" alt="image-20250724093119610"></p>
+<p>跟上面不同，调用的对象不同了，这里要利用的是sendQueryString方法：</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250724093337710-175897532896862.png" alt="image-20250724093337710"></p>
+<p>调用sendQueryPacket方法：<br><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250724093432750-175897532896863.png" alt="image-20250724093432750"></p>
+<p>跟上面的invokeStatementInterceptorsPre很像，跟进invokeQueryInterceptorsPre方法看看</p>
+<p>但前提是queryInterceptors不为null</p>
+<p>这里可以通过ConnectionImpl#connectOneTryOnly方法控制，当调用ConnectionImpl构造方法时会调用createNewIO从而调用connectOneTryOnly方法：</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250724093824929-175897532896864.png" alt="image-20250724093824929"></p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250724093833218-175897532896865.png" alt="image-20250724093833218"></p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250724093850759-175897532896866.png" alt="image-20250724093850759"></p>
+<p>同样可以通过扩展参数设置</p>
+<p>进入invokeQueryInterceptorsPre方法：</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250724094107909-175897532896867.png" alt="image-20250724094107909"></p>
+<p>逻辑跟之前版本差不多，调用了preProcess，设置queryInterceptors为<code>com.mysql.cj.jdbc.interceptors.ServerStatusDiffInterceptor</code>，跟进ServerStatusDiffInterceptor#preProcess方法：<br><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250724094348350-175897532896868.png" alt="image-20250724094348350"></p>
+<p>跟进populateMapWithSessionStatusValues方法：</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250724094419648-175897532896869.png" alt="image-20250724094419648"></p>
+<p>执行ResultSetUtil.resultSetToMap方法：</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250724094711507-175897532896870.png" alt="image-20250724094711507"></p>
+<p>最后执行了getObject方法</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250724101550740-175897532896871.png" alt="image-20250724101550740"></p>
+<p>exp：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> JDBC;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> java.sql.Connection;</span><br><span class="line"><span class="keyword">import</span> java.sql.DriverManager;</span><br><span class="line"><span class="keyword">import</span> java.sql.Statement;</span><br><span class="line"></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">class</span> <span class="title class_">test</span> &#123;</span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title function_">main</span><span class="params">(String[] args)</span> <span class="keyword">throws</span> Exception &#123;</span><br><span class="line">        <span class="type">String</span> <span class="variable">CLASS_NAME</span> <span class="operator">=</span> <span class="string">&quot;com.mysql.cj.jdbc.Driver&quot;</span>;</span><br><span class="line">        <span class="type">String</span> <span class="variable">URL</span> <span class="operator">=</span> <span class="string">&quot;jdbc:mysql://127.0.0.1:65432/test?autoDeserialize=true&amp;queryInterceptors=com.mysql.cj.jdbc.interceptors.ServerStatusDiffInterceptor&amp;user=base64ZGVzZXJfQ0MzMV9jYWxjLmV4ZQ==&quot;</span>;</span><br><span class="line"></span><br><span class="line">        Class.forName(CLASS_NAME);<span class="comment">// 注册驱动类</span></span><br><span class="line">        <span class="type">Connection</span> <span class="variable">connection</span> <span class="operator">=</span> DriverManager.getConnection(URL);</span><br><span class="line"></span><br><span class="line">        <span class="type">Statement</span> <span class="variable">statement</span> <span class="operator">=</span> connection.createStatement();</span><br><span class="line">        statement.execute(<span class="string">&quot;select database()&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250724101527921-175897532896872.png" alt="image-20250724101527921"></p>
+<h4 id="mysql-connector-java-8-0-20以后"><a href="#mysql-connector-java-8-0-20以后" class="headerlink" title="mysql-connector-java 8.0.20以后"></a>mysql-connector-java 8.0.20以后</h4><p>populateMapWithSessionStatusValues方法下不再调用ResultSetUtil.resultSetToMap方法，也不直接调用getObject方法：<br><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250724095946826-175897532896873.png" alt="image-20250724095946826"></p>
+<h2 id="bypass"><a href="#bypass" class="headerlink" title="bypass"></a>bypass</h2><p>环境：mysql-connector-java 8.0.12</p>
+<h3 id="Urlencode绕过"><a href="#Urlencode绕过" class="headerlink" title="Urlencode绕过"></a>Urlencode绕过</h3><h4 id="协议头Urlencode"><a href="#协议头Urlencode" class="headerlink" title="协议头Urlencode"></a>协议头Urlencode</h4><p>逻辑位于<code>com.mysql.cj.conf.ConnetionUrlParser#isConnetionStringSupported</code>方法：</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250724101712809-175897532896874.png" alt="image-20250724101712809"></p>
+<p>其中会对匹配部分进行一次decode方法处理，也就是一次Urldecode处理：</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250724101836213-175897532896875.png" alt="image-20250724101836213"></p>
+<h4 id="path部分Urlencode"><a href="#path部分Urlencode" class="headerlink" title="path部分Urlencode"></a>path部分Urlencode</h4><p>辑位于<code>com.mysql.cj.conf.ConnectionUrlParser#parseConnectionString</code>方法：</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250724101951057-175897532896876.png" alt="image-20250724101951057"></p>
+<p>path部分也进行了一次decode方法处理，此外还进行了trim方法处理，但方法不能去除字符串中间的空白字符，所以只能进行Urlencode绕过</p>
+<h4 id="扩展参数Urlencode"><a href="#扩展参数Urlencode" class="headerlink" title="扩展参数Urlencode"></a>扩展参数Urlencode</h4><p>在实例化SingleConnectionUrl对象时，会触发父类构造方法：<br><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250724102158129-175897532896877.png" alt="image-20250724102158129"></p>
+<p>调用collectProperties方法：</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250724102320789-17533238018385-175897532896878.png" alt="image-20250724102320789"></p>
+<p>跟进getProperties方法，一直调用到parseQuerySection方法：</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250724102415433-175897532896879.png" alt="image-20250724102415433"></p>
+<p>方法判断URL是否存在扩展参数，存在则调用processKeyValuePattern方法：</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250724102504053-175897532896880.png" alt="image-20250724102504053"></p>
+<p>分离key和value，然后进行一次Urldecode，同样可以进行Urlencode编码</p>
+<h3 id="扩展参数Value绕过"><a href="#扩展参数Value绕过" class="headerlink" title="扩展参数Value绕过"></a>扩展参数Value绕过</h3><p>由于<code>com.mysql.cj.conf.BooleanPropertyDefinition的AllowableValue</code>枚举类:</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250724102749419-175897532896881.png" alt="image-20250724102749419"></p>
+<p>所以设置TRUE和设置YES是一样的</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/2de96424/image-20250724102815701-175897532896882.png" alt="image-20250724102815701"></p>
+<p>解析时还会转大写</p>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://b1uel0n3.github.io">B1ueL0n3</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://b1uel0n3.github.io/archives/2de96424/">https://b1uel0n3.github.io/archives/2de96424/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://b1uel0n3.github.io" target="_blank">B1ueL0n3's blog</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/JDBC/">JDBC</a></div><div class="post-share"><div class="social-share" data-image="/img/18.png" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related" href="/archives/9738c3bd/" title="Java RMI反序列化深度解析"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/img/13.jpg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="info"><div class="info-1"><div class="info-item-1">上一篇</div><div class="info-item-2">Java RMI反序列化深度解析</div></div><div class="info-2"><div class="info-item-1">RPCRemote Procedure Call，远程过程调用。像本地调用方法一样调用一个远程方法。 RMI概念RMI，全程Remote Method Invocation，远程方法调用，一种用于实现远程过程调用的应用编程接口。 它使客户端上运行的程序可以调用远程服务器上对象的方法，即通过某个java虚拟机上的对象来调用另一个java虚拟机中对象的方法。 客户端获取的是远程主机上对象的引用，无论何处使用引用，方法调用都发生在原始对象上 RMI实现了RPC，通常使用Java原生反序列化，并且可以结合动态类加载和安全管理器来安全传输一个Java类。 远程对象和非远程对象远程对象：RMI中的远程对象首先需要可以序列化；并且需要实现特殊远程接口的对象，该接口指定可以远程调用对象的哪些方法；其次该对象是通过一种可以通过网络传递的特殊对象引用来使用的。和普通的 Java...</div></div></div></a><a class="pagination-related" href="/archives/890809c3/" title="Java JRMP"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/img/7.jpg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">Java JRMP</div></div><div class="info-2"><div class="info-item-1">概念Java Remote Method Protocol，Java远程方法协议。 RMI依赖的通信协议为JRMP，该协议用于查找和引用远程对象，是运行在RMI之下、TCP&#x2F;IP之上的线路层协议。 一个RMI的过程，需要用到JRMP这个协议去组织数据格式然后通过TCP进行传输、从而达到调用远程方法的目的。 当服务端与客户端之间通过socket建立连接，其中通信的协议就是通过JRMP协议格式来进行通信的 JRMP接口的两种常见实现方法：  JRMP协议(Java Remote Message Protocol)：RMI专用的Java远程消息交换协议 IIOP协议(Internet Inter-ORB...</div></div></div></a></nav></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/img/toux.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">B1ueL0n3</div><div class="author-info-description"></div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">35</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">40</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">19</div></a></div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%A6%82%E5%BF%B5"><span class="toc-number">1.</span> <span class="toc-text">概念</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%9B%B8%E5%85%B3%E7%B1%BB%E5%92%8C%E6%8E%A5%E5%8F%A3"><span class="toc-number">2.</span> <span class="toc-text">相关类和接口</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#JDBC-Demo"><span class="toc-number">3.</span> <span class="toc-text">JDBC Demo</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#SPI%E6%9C%BA%E5%88%B6"><span class="toc-number">4.</span> <span class="toc-text">SPI机制</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90"><span class="toc-number">5.</span> <span class="toc-text">源码分析</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8A%A0%E8%BD%BD%E9%A9%B1%E5%8A%A8"><span class="toc-number">5.1.</span> <span class="toc-text">加载驱动</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%8E%B7%E5%8F%96%E8%BF%9E%E6%8E%A5"><span class="toc-number">5.2.</span> <span class="toc-text">获取连接</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%89%A9%E5%B1%95%E5%8F%82%E6%95%B0%E5%B8%A6%E6%9D%A5%E7%9A%84%E5%AE%89%E5%85%A8%E9%97%AE%E9%A2%98"><span class="toc-number">6.</span> <span class="toc-text">扩展参数带来的安全问题</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#JDBC%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96"><span class="toc-number">7.</span> <span class="toc-text">JDBC反序列化</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#datectCustomCollations%E9%93%BE%E5%88%86%E6%9E%90"><span class="toc-number">7.1.</span> <span class="toc-text">datectCustomCollations链分析</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#mysql-connector-java-5-1-19-5-1-28"><span class="toc-number">7.1.1.</span> <span class="toc-text">mysql-connector-java 5.1.19~5.1.28</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#mysql-connector-java-5-1-29-5-1-40"><span class="toc-number">7.1.2.</span> <span class="toc-text">mysql-connector-java 5.1.29~5.1.40</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#mysql-connector-java-5-1-41-5-1-48"><span class="toc-number">7.1.3.</span> <span class="toc-text">mysql-connector-java 5.1.41~5.1.48</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#mysql-connector-java-6-0-2-6-0-6"><span class="toc-number">7.1.4.</span> <span class="toc-text">mysql-connector-java 6.0.2~6.0.6</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#ServerStatusDiffInterceptor%E9%93%BE%E5%88%86%E6%9E%90"><span class="toc-number">7.2.</span> <span class="toc-text">ServerStatusDiffInterceptor链分析</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#mysql-connector-java-5-1-0-5-1-10"><span class="toc-number">7.2.1.</span> <span class="toc-text">mysql-connector-java 5.1.0~5.1.10</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#mysql-connector-java-5-1-11-5-x-xx"><span class="toc-number">7.2.2.</span> <span class="toc-text">mysql-connector-java 5.1.11~5.x.xx</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#mysql-connector-java-6-x"><span class="toc-number">7.2.3.</span> <span class="toc-text">mysql-connector-java 6.x</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#mysql-connector-java-8-0-7-8-0-20"><span class="toc-number">7.2.4.</span> <span class="toc-text">mysql-connector-java 8.0.7~8.0.20</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#mysql-connector-java-8-0-20%E4%BB%A5%E5%90%8E"><span class="toc-number">7.2.5.</span> <span class="toc-text">mysql-connector-java 8.0.20以后</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#bypass"><span class="toc-number">8.</span> <span class="toc-text">bypass</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#Urlencode%E7%BB%95%E8%BF%87"><span class="toc-number">8.1.</span> <span class="toc-text">Urlencode绕过</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%8D%8F%E8%AE%AE%E5%A4%B4Urlencode"><span class="toc-number">8.1.1.</span> <span class="toc-text">协议头Urlencode</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#path%E9%83%A8%E5%88%86Urlencode"><span class="toc-number">8.1.2.</span> <span class="toc-text">path部分Urlencode</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%89%A9%E5%B1%95%E5%8F%82%E6%95%B0Urlencode"><span class="toc-number">8.1.3.</span> <span class="toc-text">扩展参数Urlencode</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E6%89%A9%E5%B1%95%E5%8F%82%E6%95%B0Value%E7%BB%95%E8%BF%87"><span class="toc-number">8.2.</span> <span class="toc-text">扩展参数Value绕过</span></a></li></ol></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/archives/bc5d7b36/" title="EL表达式注入"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/img/11.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="EL表达式注入"/></a><div class="content"><a class="title" href="/archives/bc5d7b36/" title="EL表达式注入">EL表达式注入</a><time datetime="2025-10-17T07:40:52.000Z" title="发表于 2025-10-17 15:40:52">2025-10-17</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/archives/853cfc82/" title="fastjson原生反序列化漏洞"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/img/14.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="fastjson原生反序列化漏洞"/></a><div class="content"><a class="title" href="/archives/853cfc82/" title="fastjson原生反序列化漏洞">fastjson原生反序列化漏洞</a><time datetime="2025-10-17T07:36:12.000Z" title="发表于 2025-10-17 15:36:12">2025-10-17</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/archives/1970b414/" title="fastjson全版本漏洞"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/img/4.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="fastjson全版本漏洞"/></a><div class="content"><a class="title" href="/archives/1970b414/" title="fastjson全版本漏洞">fastjson全版本漏洞</a><time datetime="2025-10-17T07:33:23.000Z" title="发表于 2025-10-17 15:33:23">2025-10-17</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/archives/fd34ba6b/" title="shiro-721反序列化漏洞"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/img/19.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="shiro-721反序列化漏洞"/></a><div class="content"><a class="title" href="/archives/fd34ba6b/" title="shiro-721反序列化漏洞">shiro-721反序列化漏洞</a><time datetime="2025-10-17T07:27:41.000Z" title="发表于 2025-10-17 15:27:41">2025-10-17</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/archives/2f569ddd/" title="shiro-550反序列化漏洞"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/img/22.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="shiro-550反序列化漏洞"/></a><div class="content"><a class="title" href="/archives/2f569ddd/" title="shiro-550反序列化漏洞">shiro-550反序列化漏洞</a><time datetime="2025-10-17T07:27:15.000Z" title="发表于 2025-10-17 15:27:15">2025-10-17</time></div></div></div></div></div></div></main><footer id="footer" style="background-image: url(/img/26.png);"><div id="footer-wrap"><div class="copyright">&copy;2025 By B1ueL0n3</div><div class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="translateLink" type="button" title="简繁转换">繁</button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.jsdelivr.net/npm/instant.page/instantpage.min.js" type="module"></script><script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload/dist/lazyload.iife.min.js"></script><div class="js-pjax"></div><script src="/js/title.js"></script><canvas class="fireworks" mobile="false"></canvas><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/fireworks.min.js"></script><script id="canvas_nest" defer="defer" color="0,0,255" opacity="0.7" zIndex="-1" count="90" mobile="false" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/canvas-nest.min.js"></script><script id="click-heart" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/click-heart.min.js" async="async" mobile="false"></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><span id="loading-status"></span><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="text-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  数据加载中</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="搜索文章" type="text"/></div></div><hr/><div id="local-search-results"></div><div id="local-search-stats-wrap"></div></div></div><div id="search-mask"></div><script src="/js/search/local-search.js"></script></div></div></body></html>
