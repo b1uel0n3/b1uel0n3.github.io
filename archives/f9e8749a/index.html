@@ -1,0 +1,240 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>MuYuCMS 2.7代码审计 | B1ueL0n3's blog</title><meta name="author" content="B1ueL0n3"><meta name="copyright" content="B1ueL0n3"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="环境搭建下载地址：https:&#x2F;&#x2F;gitee.com&#x2F;MuYuCMS&#x2F;MuYuCMS 环境：  php5.6.9 Apache2.4.39 MySQL5.7.26  框架分析先看目录结构：  thinkphp框架，重点放在application 路由分析进去看url： 1http:&#x2F;&#x2F;127.0.0.1&#x2F;admin.php&#x2F;index&#x2F;index.html  REWRITE模式，admin对应模块">
+<meta property="og:type" content="article">
+<meta property="og:title" content="MuYuCMS 2.7代码审计">
+<meta property="og:url" content="https://b1uel0n3.github.io/archives/f9e8749a/index.html">
+<meta property="og:site_name" content="B1ueL0n3&#39;s blog">
+<meta property="og:description" content="环境搭建下载地址：https:&#x2F;&#x2F;gitee.com&#x2F;MuYuCMS&#x2F;MuYuCMS 环境：  php5.6.9 Apache2.4.39 MySQL5.7.26  框架分析先看目录结构：  thinkphp框架，重点放在application 路由分析进去看url： 1http:&#x2F;&#x2F;127.0.0.1&#x2F;admin.php&#x2F;index&#x2F;index.html  REWRITE模式，admin对应模块">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://b1uel0n3.github.io/img/1.jpg">
+<meta property="article:published_time" content="2025-10-25T12:23:55.000Z">
+<meta property="article:modified_time" content="2025-10-25T12:25:39.727Z">
+<meta property="article:author" content="B1ueL0n3">
+<meta property="article:tag" content="MuYuCMS">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://b1uel0n3.github.io/img/1.jpg"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "MuYuCMS 2.7代码审计",
+  "url": "https://b1uel0n3.github.io/archives/f9e8749a/",
+  "image": "https://b1uel0n3.github.io/img/1.jpg",
+  "datePublished": "2025-10-25T12:23:55.000Z",
+  "dateModified": "2025-10-25T12:25:39.727Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "B1ueL0n3",
+      "url": "https://b1uel0n3.github.io/"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/toux.jpg"><link rel="canonical" href="https://b1uel0n3.github.io/archives/f9e8749a/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//fonts.googleapis.com" crossorigin=""/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free/css/all.min.css"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        if (!ttl) return
+        const expiry = Date.now() + ttl * 86400000
+        localStorage.setItem(key, JSON.stringify({ value, expiry }))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return undefined
+        const { value, expiry } = JSON.parse(itemStr)
+        if (Date.now() > expiry) {
+          localStorage.removeItem(key)
+          return undefined
+        }
+        return value
+      }
+    }
+
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => new Promise((resolve, reject) => {
+        const script = document.createElement('script')
+        script.src = url
+        script.async = true
+        Object.entries(attr).forEach(([key, val]) => script.setAttribute(key, val))
+        script.onload = script.onreadystatechange = () => {
+          if (!script.readyState || /loaded|complete/.test(script.readyState)) resolve()
+        }
+        script.onerror = reject
+        document.head.appendChild(script)
+      }),
+      getCSS: (url, id) => new Promise((resolve, reject) => {
+        const link = document.createElement('link')
+        link.rel = 'stylesheet'
+        link.href = url
+        if (id) link.id = id
+        link.onload = link.onreadystatechange = () => {
+          if (!link.readyState || /loaded|complete/.test(link.readyState)) resolve()
+        }
+        link.onerror = reject
+        document.head.appendChild(link)
+      }),
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!false && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const activateDarkMode = () => {
+        document.documentElement.setAttribute('data-theme', 'dark')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.setAttribute('data-theme', 'light')
+        if (document.querySelector('meta[name="theme-color"]') !== null) {
+          document.querySelector('meta[name="theme-color"]').setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Titillium+Web&amp;display=swap" media="print" onload="this.media='all'"><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.xml","preload":false,"top_n_per_article":1,"unescape":false,"languages":{"hits_empty":"未找到符合您查询的内容：${query}","hits_stats":"共找到 ${hits} 篇文章"}},
+  translate: {"defaultEncoding":2,"translateDelay":0,"msgToTraditionalChinese":"繁","msgToSimplifiedChinese":"简"},
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":true},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'null',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: true,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: true,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'MuYuCMS 2.7代码审计',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><link rel="stylesheet" href="/css/custom.css"><meta name="generator" content="Hexo 7.3.0"></head><body><div id="loading-box"><div class="loading-left-bg"></div><div class="loading-right-bg"></div><div class="spinner-box"><div class="configure-border-1"><div class="configure-core"></div></div><div class="configure-border-2"><div class="configure-core"></div></div><div class="loading-word">加载中...</div></div></div><script>(()=>{
+  const $loadingBox = document.getElementById('loading-box')
+  const $body = document.body
+  const preloader = {
+    endLoading: () => {
+      $body.style.overflow = ''
+      $loadingBox.classList.add('loaded')
+    },
+    initLoading: () => {
+      $body.style.overflow = 'hidden'
+      $loadingBox.classList.remove('loaded')
+    }
+  }
+
+  preloader.initLoading()
+  window.addEventListener('load', preloader.endLoading)
+
+  if (false) {
+    btf.addGlobalFn('pjaxSend', preloader.initLoading, 'preloader_init')
+    btf.addGlobalFn('pjaxComplete', preloader.endLoading, 'preloader_end')
+  }
+})()</script><div id="web_bg" style="background-image: url(/img/2.jpg);"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/img/toux.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">45</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">46</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">23</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 文章</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="post-bg" id="page-header" style="background-image: url(/img/41.png);"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/" title="回到主页"><span class="site-name">B1ueL0n3's blog</span></a><a class="nav-page-title" href="/"><span class="site-name">MuYuCMS 2.7代码审计</span></a><!--鼠标下滑时的文章标题显示--></span><div class="mask-name-container"><center id="name-container"><a id="page-name" href="javascript:btf.scrollToDest(0, 500)"></a></center></div><div id="menus"><div id="search-button"><span class="site-page social-icon search"><i class="fas fa-search fa-fw"></i></span></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 文章</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav><div id="post-info"><h1 class="post-title">MuYuCMS 2.7代码审计</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="far fa-calendar-alt fa-fw post-meta-icon"></i><span class="post-meta-label">发表于</span><time class="post-meta-date-created" datetime="2025-10-25T12:23:55.000Z" title="发表于 2025-10-25 20:23:55">2025-10-25</time><span class="post-meta-separator">|</span><i class="fas fa-history fa-fw post-meta-icon"></i><span class="post-meta-label">更新于</span><time class="post-meta-date-updated" datetime="2025-10-25T12:25:39.727Z" title="更新于 2025-10-25 20:25:39">2025-10-25</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/Web/">Web</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/Web/php%E4%BB%A3%E7%A0%81%E5%AE%A1%E8%AE%A1/">php代码审计</a><i class="fas fa-angle-right post-meta-separator"></i><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/Web/php%E4%BB%A3%E7%A0%81%E5%AE%A1%E8%AE%A1/CMS/">CMS</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">总字数:</span><span class="word-count">618</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">阅读时长:</span><span>2分钟</span></span><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div></header><main class="layout" id="content-inner"><div id="post"><article class="container post-content" id="article-container"><h2 id="环境搭建"><a href="#环境搭建" class="headerlink" title="环境搭建"></a>环境搭建</h2><p>下载地址：<a target="_blank" rel="noopener" href="https://gitee.com/MuYuCMS/MuYuCMS">https://gitee.com/MuYuCMS/MuYuCMS</a></p>
+<p>环境：</p>
+<ul>
+<li>php5.6.9</li>
+<li>Apache2.4.39</li>
+<li>MySQL5.7.26</li>
+</ul>
+<h2 id="框架分析"><a href="#框架分析" class="headerlink" title="框架分析"></a>框架分析</h2><p>先看目录结构：</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/f9e8749a/image-20251025180507891.png" alt="image-20251025180507891"></p>
+<p>thinkphp框架，重点放在application</p>
+<h2 id="路由分析"><a href="#路由分析" class="headerlink" title="路由分析"></a>路由分析</h2><p>进去看url：<br><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/f9e8749a/image-20251025180829850.png" alt="image-20251025180829850"></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">http://127.0.0.1/admin.php/index/index.html</span><br></pre></td></tr></table></figure>
+
+<p>REWRITE模式，admin对应模块，index对应控制器，index对应操作即方法，不过拼接了html</p>
+<h2 id="任意文件删除"><a href="#任意文件删除" class="headerlink" title="任意文件删除"></a>任意文件删除</h2><h3 id="第一处：模版管理处"><a href="#第一处：模版管理处" class="headerlink" title="第一处：模版管理处"></a>第一处：模版管理处</h3><p>常见的文件删除函数有：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">unlinkrmdir</span><br><span class="line">unlink</span><br><span class="line">rmdir</span><br><span class="line">delete</span><br></pre></td></tr></table></figure>
+
+<p>这里我们全局搜索delete，定位到<code>application\admin\controller\Template.php</code>文件的tempdel方法：</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/f9e8749a/image-20251025181545483.png" alt="image-20251025181545483"></p>
+<p>这里会将http请求的temn和tp参数进行拼接，然后调用<code>delete_dir_file</code>方法进行删除指定目录，跟进<code>delete_dir_file</code>方法：<br><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/f9e8749a/image-20251025181926539.png" alt="image-20251025181926539"></p>
+<p>可以看到该方法会判断传入的路径是否是目录然后遍历删除，从头到尾并没有对传入的参数作任何过滤，所以我们可以利用目录穿越实现任意目录删除</p>
+<p>其功能点位于：</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/f9e8749a/image-20251025182439903.png" alt="image-20251025182439903"></p>
+<p>创建一个测试文件：<br><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/f9e8749a/image-20251025182205645.png" alt="image-20251025182205645"></p>
+<p>然后抓包修改：</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/f9e8749a/image-20251025182223600.png" alt="image-20251025182223600"></p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/f9e8749a/image-20251025182330600.png" alt="image-20251025182330600"></p>
+<p>成功删除b1uel0n3目录</p>
+<h3 id="第二处：图片管理处"><a href="#第二处：图片管理处" class="headerlink" title="第二处：图片管理处"></a>第二处：图片管理处</h3><p>搜索unlink，定位到<code>application\admin\controller\Accessory.php</code>文件的picdel方法：</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/f9e8749a/image-20251025184854606.png" alt="image-20251025184854606"></p>
+<p>同样是获取picdelur参数进行拼接且没有过滤，所以同样可以进行任意文件删除：</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/f9e8749a/image-20251025185241156.png" alt="image-20251025185241156"></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">picdelur=/../b1uel0n3.txt</span><br></pre></td></tr></table></figure>
+
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/f9e8749a/image-20251025185154299.png" alt="image-20251025185154299"></p>
+<h3 id="第三处：附件管理处"><a href="#第三处：附件管理处" class="headerlink" title="第三处：附件管理处"></a>第三处：附件管理处</h3><p>定位到<code>application\admin\controller\Accessory.php</code>文件的filesdel方法：</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/f9e8749a/image-20251025185400250.png" alt="image-20251025185400250"></p>
+<p>逻辑一样的：<br><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/f9e8749a/image-20251025185443781.png" alt="image-20251025185443781"></p>
+<h2 id="任意文件上传"><a href="#任意文件上传" class="headerlink" title="任意文件上传"></a>任意文件上传</h2><h3 id="第一处：上传插件处"><a href="#第一处：上传插件处" class="headerlink" title="第一处：上传插件处"></a>第一处：上传插件处</h3><p>定位到<code>application\admin\controller\Plug.php</code>文件的addonsup方法</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/f9e8749a/image-20251025185804698.png" alt="image-20251025185804698"></p>
+<p>这里会对我们上传的文件进行解压然后放在<code>ADDON_PATH</code>目录下，也就是addon目录下，且没有任何过滤，直接导致任意文件上传从而getshell</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/f9e8749a/image-20251025190002541.png" alt="image-20251025190002541"></p>
+<p>直接上传恶意文件的压缩包：</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/f9e8749a/image-20251025190043221.png" alt="image-20251025190043221"></p>
+<p>直接访问：</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/f9e8749a/image-20251025190132465.png" alt="image-20251025190132465"></p>
+<h3 id="第二处：模板上传处"><a href="#第二处：模板上传处" class="headerlink" title="第二处：模板上传处"></a>第二处：模板上传处</h3><p>定位到<code>application\admin\controller\Template.php</code>文件的tempup方法：<br><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/f9e8749a/image-20251025195617813.png" alt="image-20251025195617813"></p>
+<p>逻辑是类似的，一样是将上传的文件进行解压然后放到指定目录，而存在目录为<code>template/home_temp/</code></p>
+<p>功能点在模板上传处：</p>
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/f9e8749a/image-20251025195804480.png" alt="image-20251025195804480"></p>
+<p>直接传恶意文件的zip就行了：<br><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/f9e8749a/image-20251025195926514.png" alt="image-20251025195926514"></p>
+<h2 id="SSRF"><a href="#SSRF" class="headerlink" title="SSRF"></a>SSRF</h2><p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/f9e8749a/image-20251025192228307.png" alt="image-20251025192228307"></p>
+<p>定位到<code>application\admin\controller\Base.php</code>文件的<code>get_url_content</code>方法:<br><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/f9e8749a/image-20251025192332301.png" alt="image-20251025192332301"></p>
+<p>这里存在SSRF，逻辑就是获取url参数然后调用file_get_contents方法获取url指定的内容，唯一条件就是要求url是以http开头的，但依然能造成访问内网服务、获取敏感文件资源等危害，直接拼接路由：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">http://127.0.0.1/admin.php/Base/get_url_content.html?url=http://127.0.0.1/addons/phpinfo.php</span><br></pre></td></tr></table></figure>
+
+<p><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/archives/f9e8749a/image-20251025202506929.png" alt="image-20251025202506929"></p>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://b1uel0n3.github.io">B1ueL0n3</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://b1uel0n3.github.io/archives/f9e8749a/">https://b1uel0n3.github.io/archives/f9e8749a/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://b1uel0n3.github.io" target="_blank">B1ueL0n3's blog</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/MuYuCMS/">MuYuCMS</a></div><div class="post-share"><div class="social-share" data-image="/img/1.jpg" data-sites="facebook,twitter,wechat,weibo,qq"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related full-width" href="/archives/8e97595c/" title="YCCMS 3.4代码审计"><img class="cover" src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/img/20.png" onerror="onerror=null;src='/img/404.jpg'" alt="cover of previous post"><div class="info"><div class="info-1"><div class="info-item-1">上一篇</div><div class="info-item-2">YCCMS 3.4代码审计</div></div><div class="info-2"><div class="info-item-1">环境搭建下载地址：https://www.jb51.net/codes/716819.html#downintro2 环境：  php5.6.9 MySQL5.7.26 Apache2.4.39  下载后将文件夹放到phpstudy下的WWW目录下  导入yccms.sql到本地数据库： 接着修改config配置（将数据库名、用户名、密码填入其中）：  然后就可以开始审计了  分析框架第一步依然是分析框架，先看目录结构：  12345678910/Admin 后台路径首页，包含/config/run.inc.php文件/Ceshi 测试页面/Ceshi2 测试页面/config 配置变量目录/Compile 编译目录/Public 存放缓存代码以及网站相关配置代码/Uploads 上传图片目录/view 模板目录/controller 业务逻辑处理/model...</div></div></div></a></nav></div><div class="aside-content" id="aside-content"><div class="card-widget card-info text-center"><div class="avatar-img"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/img/toux.jpg" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="author-info-name">B1ueL0n3</div><div class="author-info-description"></div><div class="site-data"><a href="/archives/"><div class="headline">文章</div><div class="length-num">45</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">46</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">23</div></a></div></div><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%8E%AF%E5%A2%83%E6%90%AD%E5%BB%BA"><span class="toc-number">1.</span> <span class="toc-text">环境搭建</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%A1%86%E6%9E%B6%E5%88%86%E6%9E%90"><span class="toc-number">2.</span> <span class="toc-text">框架分析</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%B7%AF%E7%94%B1%E5%88%86%E6%9E%90"><span class="toc-number">3.</span> <span class="toc-text">路由分析</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E5%88%A0%E9%99%A4"><span class="toc-number">4.</span> <span class="toc-text">任意文件删除</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%AC%AC%E4%B8%80%E5%A4%84%EF%BC%9A%E6%A8%A1%E7%89%88%E7%AE%A1%E7%90%86%E5%A4%84"><span class="toc-number">4.1.</span> <span class="toc-text">第一处：模版管理处</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%AC%AC%E4%BA%8C%E5%A4%84%EF%BC%9A%E5%9B%BE%E7%89%87%E7%AE%A1%E7%90%86%E5%A4%84"><span class="toc-number">4.2.</span> <span class="toc-text">第二处：图片管理处</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%AC%AC%E4%B8%89%E5%A4%84%EF%BC%9A%E9%99%84%E4%BB%B6%E7%AE%A1%E7%90%86%E5%A4%84"><span class="toc-number">4.3.</span> <span class="toc-text">第三处：附件管理处</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BB%BB%E6%84%8F%E6%96%87%E4%BB%B6%E4%B8%8A%E4%BC%A0"><span class="toc-number">5.</span> <span class="toc-text">任意文件上传</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%AC%AC%E4%B8%80%E5%A4%84%EF%BC%9A%E4%B8%8A%E4%BC%A0%E6%8F%92%E4%BB%B6%E5%A4%84"><span class="toc-number">5.1.</span> <span class="toc-text">第一处：上传插件处</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E7%AC%AC%E4%BA%8C%E5%A4%84%EF%BC%9A%E6%A8%A1%E6%9D%BF%E4%B8%8A%E4%BC%A0%E5%A4%84"><span class="toc-number">5.2.</span> <span class="toc-text">第二处：模板上传处</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#SSRF"><span class="toc-number">6.</span> <span class="toc-text">SSRF</span></a></li></ol></div></div><div class="card-widget card-recent-post"><div class="item-headline"><i class="fas fa-history"></i><span>最新文章</span></div><div class="aside-list"><div class="aside-list-item"><a class="thumbnail" href="/archives/f9e8749a/" title="MuYuCMS 2.7代码审计"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/img/1.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="MuYuCMS 2.7代码审计"/></a><div class="content"><a class="title" href="/archives/f9e8749a/" title="MuYuCMS 2.7代码审计">MuYuCMS 2.7代码审计</a><time datetime="2025-10-25T12:23:55.000Z" title="发表于 2025-10-25 20:23:55">2025-10-25</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/archives/8e97595c/" title="YCCMS 3.4代码审计"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/img/20.png" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="YCCMS 3.4代码审计"/></a><div class="content"><a class="title" href="/archives/8e97595c/" title="YCCMS 3.4代码审计">YCCMS 3.4代码审计</a><time datetime="2025-10-23T17:26:11.000Z" title="发表于 2025-10-24 01:26:11">2025-10-24</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/archives/cb38bde1/" title="百家CMS代码审计"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/img/7.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="百家CMS代码审计"/></a><div class="content"><a class="title" href="/archives/cb38bde1/" title="百家CMS代码审计">百家CMS代码审计</a><time datetime="2025-10-22T16:36:03.000Z" title="发表于 2025-10-23 00:36:03">2025-10-23</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/archives/1efa6206/" title="红日代审Day5-mail函数命令执行漏洞"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/img/3.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="红日代审Day5-mail函数命令执行漏洞"/></a><div class="content"><a class="title" href="/archives/1efa6206/" title="红日代审Day5-mail函数命令执行漏洞">红日代审Day5-mail函数命令执行漏洞</a><time datetime="2025-10-21T13:23:38.000Z" title="发表于 2025-10-21 21:23:38">2025-10-21</time></div></div><div class="aside-list-item"><a class="thumbnail" href="/archives/22555f4/" title="红日代审Day4-strpos函数缺陷"><img src= "data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" data-lazy-src="/img/5.jpg" onerror="this.onerror=null;this.src='/img/404.jpg'" alt="红日代审Day4-strpos函数缺陷"/></a><div class="content"><a class="title" href="/archives/22555f4/" title="红日代审Day4-strpos函数缺陷">红日代审Day4-strpos函数缺陷</a><time datetime="2025-10-21T13:22:56.000Z" title="发表于 2025-10-21 21:22:56">2025-10-21</time></div></div></div></div></div></div></main><footer id="footer" style="background-image: url(/img/41.png);"><div id="footer-wrap"><div class="copyright">&copy;2025 By B1ueL0n3</div><div class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly</a></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="translateLink" type="button" title="简繁转换">繁</button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js"></script><script src="/js/main.js"></script><script src="/js/tw_cn.js"></script><script src="https://cdn.jsdelivr.net/npm/instant.page/instantpage.min.js" type="module"></script><script src="https://cdn.jsdelivr.net/npm/vanilla-lazyload/dist/lazyload.iife.min.js"></script><div class="js-pjax"></div><script src="/js/title.js"></script><canvas class="fireworks" mobile="false"></canvas><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/fireworks.min.js"></script><script id="canvas_nest" defer="defer" color="0,0,255" opacity="0.7" zIndex="-1" count="90" mobile="false" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/canvas-nest.min.js"></script><script id="click-heart" src="https://cdn.jsdelivr.net/npm/butterfly-extsrc/dist/click-heart.min.js" async="async" mobile="false"></script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><span id="loading-status"></span><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="text-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  数据加载中</span></div><div class="search-wrap"><div id="local-search-input"><div class="local-search-box"><input class="local-search-box--input" placeholder="搜索文章" type="text"/></div></div><hr/><div id="local-search-results"></div><div id="local-search-stats-wrap"></div></div></div><div id="search-mask"></div><script src="/js/search/local-search.js"></script></div></div></body></html>
